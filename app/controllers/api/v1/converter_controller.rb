@@ -71,22 +71,31 @@ class Api::V1::ConverterController < ApplicationController
     from = params[:from]&.downcase
     to = params[:to]&.downcase
   
-    return render json: { error: 'Missing parameters' }, status: :bad_request unless amount.positive? && from && to
+    return render json: { error: 'Missing or invalid parameters' }, status: :bad_request unless amount && from && to
   
     conversions = {
       "sqft" => { "m2" => 0.092903 },
       "m2" => { "sqft" => 10.7639 },
       "liters" => { "gallons" => 0.264172 },
-      "gallons" => { "liters" => 3.78541 }
+      "gallons" => { "liters" => 3.78541 },
+      "kmh" => { "mph" => 0.621371 },
+      "mph" => { "kmh" => 1.60934 },
+      "c" => { "f" => ->(c) { c * 9.0 / 5 + 32 } },
+      "f" => { "c" => ->(f) { (f - 32) * 5.0 / 9 } }
     }
   
-    rate = conversions[from]&.[](to)
+    rule = conversions[from]&.[](to)
   
-    if rate
-      converted = amount * rate
-      render json: { amount: amount, from: from, to: to, converted: converted.round(4) }
+    if rule
+      result = rule.is_a?(Proc) ? rule.call(amount) : amount * rule
+      render json: {
+        amount: amount,
+        from: from,
+        to: to,
+        converted: result.round(4)
+      }
     else
-      render json: { error: 'Unsupported conversion' }, status: :unprocessable_entity
+      render json: { error: 'Unsupported unit conversion' }, status: :unprocessable_entity
     end
   end
 
