@@ -3,6 +3,7 @@ Rails.application.routes.draw do
   namespace :api do
     namespace :v1 do
       get 'convert', to: 'converter#convert'
+      get 'currencies', to: 'converter#currencies' # <-- for fetching available currencies list
     end
   end
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.

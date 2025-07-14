@@ -24,6 +24,28 @@ class Api::V1::ConverterController < ApplicationController
     end
   end
 
+  def currencies
+    api_key = ENV['EXCHANGE_RATE_API_KEY']
+    url = URI("https://v6.exchangerate-api.com/v6/#{api_key}/codes")
+
+    begin
+      response = Net::HTTP.get(url)
+      data = JSON.parse(response)
+
+      if data['result'] == 'success'
+        render json: {
+          base_code: data['base_code'],
+          supported_codes: data['supported_codes'] # Array of [currency_code, currency_name]
+        }
+      else
+        render json: { error: 'Failed to fetch supported currencies' }, status: :unprocessable_entity
+      end
+    rescue => e
+      Rails.logger.error("Currency list error: #{e.message}")
+      render json: { error: 'Internal server error' }, status: :internal_server_error
+    end
+  end
+
   private
 
   def convert_currency(amount, from, to)
