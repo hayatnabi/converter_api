@@ -7,7 +7,10 @@ class Api::V1::ConverterController < ApplicationController
     "area" => ["sqft", "m2"],
     "volume" => ["liters", "gallons"],
     "temperature" => ["c", "f"],
-    "speed" => ["kmh", "mph"]
+    "speed" => ["kmh", "mph"],
+    "time" => ["seconds", "minutes", "hours", "days"],
+    "mass" => ["grams", "kg", "tonnes"],
+    "storage" => ["kb", "mb", "gb", "tb"]
   }.freeze
 
   def unit_categories
@@ -91,14 +94,54 @@ class Api::V1::ConverterController < ApplicationController
     end
 
     conversions = {
+      # Area
       "sqft" => { "m2" => 0.092903 },
       "m2" => { "sqft" => 10.7639 },
+
+      # Volume
       "liters" => { "gallons" => 0.264172 },
       "gallons" => { "liters" => 3.78541 },
+
+      # Speed
       "kmh" => { "mph" => 0.621371 },
       "mph" => { "kmh" => 1.60934 },
+
+      # Temperature
       "c" => { "f" => ->(c) { c * 9.0 / 5 + 32 } },
-      "f" => { "c" => ->(f) { (f - 32) * 5.0 / 9 } }
+      "f" => { "c" => ->(f) { (f - 32) * 5.0 / 9 } },
+
+      # Time
+      "seconds" => { 
+        "minutes" => 1.0 / 60,
+        "hours" => 1.0 / 3600,
+        "days" => 1.0 / 86400
+      },
+      "minutes" => { 
+        "seconds" => 60,
+        "hours" => 1.0 / 60,
+        "days" => 1.0 / 1440
+      },
+      "hours" => {
+        "seconds" => 3600,
+        "minutes" => 60,
+        "days" => 1.0 / 24
+      },
+      "days" => {
+        "seconds" => 86400,
+        "minutes" => 1440,
+        "hours" => 24
+      },
+
+      # Mass
+      "grams" => { "kg" => 0.001 },
+      "kg" => { "grams" => 1000, "tonnes" => 0.001 },
+      "tonnes" => { "kg" => 1000 },
+
+      # Data Storage
+      "kb" => { "mb" => 1.0 / 1024 },
+      "mb" => { "kb" => 1024, "gb" => 1.0 / 1024 },
+      "gb" => { "mb" => 1024, "tb" => 1.0 / 1024 },
+      "tb" => { "gb" => 1024 }
     }
   
     rule = conversions[from]&.[](to)
