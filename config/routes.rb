@@ -6,6 +6,7 @@ Rails.application.routes.draw do
       get 'currencies', to: 'converter#currencies' # <-- for fetching available currencies list
       get 'unit_convert', to: 'converter#unit_convert' # Area/Volume
       get 'usage_log', to: 'converter#usage_log'       # Usage Analytics
+      get 'unit_categories', to: 'converter#unit_categories' # Get Unit Categories
     end
   end
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.

@@ -3,6 +3,18 @@ require 'uri'
 require 'json'
 
 class Api::V1::ConverterController < ApplicationController
+  UNIT_CATEGORIES = {
+    "area" => ["sqft", "m2"],
+    "volume" => ["liters", "gallons"],
+    "temperature" => ["c", "f"],
+    "speed" => ["kmh", "mph"]
+  }.freeze
+
+  def unit_categories
+    log_usage("unit_cartegories_list")
+    render json: { categories: UNIT_CATEGORIES }
+  end
+
   @@usage_logs = []
 
   def log_usage(endpoint)
@@ -71,8 +83,13 @@ class Api::V1::ConverterController < ApplicationController
     from = params[:from]&.downcase
     to = params[:to]&.downcase
   
-    return render json: { error: 'Missing or invalid parameters' }, status: :bad_request unless amount && from && to
+    return render json: { error: 'Missing or invalid parameters' }, status: :bad_request unless amount.positive? && from && to
   
+    all_supported_units = UNIT_CATEGORIES.values.flatten
+    unless all_supported_units.include?(from) && all_supported_units.include?(to)
+      return render json: { error: 'Unsupported unit' }, status: :unprocessable_entity
+    end
+
     conversions = {
       "sqft" => { "m2" => 0.092903 },
       "m2" => { "sqft" => 10.7639 },
