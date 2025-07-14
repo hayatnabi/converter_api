@@ -3,7 +3,23 @@ require 'uri'
 require 'json'
 
 class Api::V1::ConverterController < ApplicationController
+  @@usage_logs = []
+
+  def log_usage(endpoint)
+    @@usage_logs << {
+      endpoint: endpoint,
+      ip: request.remote_ip,
+      time: Time.current
+    }
+  end
+
+  def usage_log
+    render json: { logs: @@usage_logs }
+  end
+
   def convert
+    log_usage("currency_convert")
+
     amount = params[:amount].to_f
     from = params[:from]&.upcase
     to = params[:to]&.upcase
@@ -25,6 +41,8 @@ class Api::V1::ConverterController < ApplicationController
   end
 
   def currencies
+    log_usage("currency_list")
+
     api_key = ENV['EXCHANGE_RATE_API_KEY']
     url = URI("https://v6.exchangerate-api.com/v6/#{api_key}/codes")
 
@@ -43,6 +61,32 @@ class Api::V1::ConverterController < ApplicationController
     rescue => e
       Rails.logger.error("Currency list error: #{e.message}")
       render json: { error: 'Internal server error' }, status: :internal_server_error
+    end
+  end
+
+  def unit_convert
+    log_usage("unit_convert")
+
+    amount = params[:amount].to_f
+    from = params[:from]&.downcase
+    to = params[:to]&.downcase
+  
+    return render json: { error: 'Missing parameters' }, status: :bad_request unless amount.positive? && from && to
+  
+    conversions = {
+      "sqft" => { "m2" => 0.092903 },
+      "m2" => { "sqft" => 10.7639 },
+      "liters" => { "gallons" => 0.264172 },
+      "gallons" => { "liters" => 3.78541 }
+    }
+  
+    rate = conversions[from]&.[](to)
+  
+    if rate
+      converted = amount * rate
+      render json: { amount: amount, from: from, to: to, converted: converted.round(4) }
+    else
+      render json: { error: 'Unsupported conversion' }, status: :unprocessable_entity
     end
   end
 
